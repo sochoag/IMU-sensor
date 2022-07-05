@@ -66,9 +66,12 @@ Quaternion qFiltered;        // [w, x, y, z]         quaternion container
 VectorInt16 aa;      // [x, y, z]            accel sensor measurements
 VectorInt16 aaReal;  // [x, y, z]            gravity-free accel sensor measurements
 VectorInt16 aaWorld; // [x, y, z]            world-frame accel sensor measurements
+VectorInt16 aaFiltered;      // [x, y, z]            accel sensor measurements
+VectorInt16 aaRealFiltered;  // [x, y, z]            gravity-free accel sensor measurements
+VectorInt16 aaWorldFiltered; // [x, y, z]            world-frame accel sensor measurements
 VectorFloat gravity; // [x, y, z]            gravity vector
 
-QuaternionKalmanFilter quaternionKalmanFilter = QuaternionKalmanFilter(0.75, 25);
+QuaternionKalmanFilter quaternionKalmanFilter = QuaternionKalmanFilter(0.25, 25);
 
 // MARK: Interrupt Routine
 
@@ -111,8 +114,8 @@ void setup()
   if (devStatus == 0)
   {
     // Calibration Time: generate offsets and calibrate our MPU6050
-    mpu.CalibrateAccel(6);
-    mpu.CalibrateGyro(6);
+    //mpu.CalibrateAccel(6);
+    //mpu.CalibrateGyro(6);
     //mpu.PrintActiveOffsets();
     //  turn on the DMP, now that it's ready
     debugln(F("Enabling DMP..."));
@@ -159,42 +162,44 @@ void loop()
   { // Get the Latest packet
     mpu.dmpGetQuaternion(&q, fifoBuffer);
 
-    q = quaternionKalmanFilter.Filter(q);
+    qFiltered = quaternionKalmanFilter.Filter(q);
 
-    mpu.dmpGetAccel(&aa, fifoBuffer);
-    mpu.dmpGetGravity(&gravity, &q);
-    mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
-    mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
+    // mpu.dmpGetAccel(&aa, fifoBuffer);
+    // mpu.dmpGetGravity(&gravity, &q);
+    // mpu.dmpGetLinearAccel(&aaReal, &aa, &gravity);
+    // mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
 
-    aAcc = {aaWorld.x*constante,aaWorld.y*constante,aaWorld.z*constante};
+    // mpu.dmpGetAccel(&aaFiltered, fifoBuffer);
+    // mpu.dmpGetGravity(&gravity, &qFiltered);
+    // mpu.dmpGetLinearAccel(&aaRealFiltered, &aaFiltered, &gravity);
+    // mpu.dmpGetLinearAccelInWorld(&aaWorldFiltered, &aaRealFiltered, &qFiltered);
 
 
-    toSerial("xAcc:");
-    toSerial(aAcc.x);
+
+    toSerial("wRaw:");
+    toSerial(q.w);
     toSerial(",");
-    toSerial("yAcc:");
-    toSerial(aAcc.y);
+    toSerial("qRaw:");
+    toSerial(q.x);
     toSerial(",");
-    toSerial("zAcc:");
-    toSerial(aAcc.z);
+    toSerial("yRaw:");
+    toSerial(q.y);
     toSerial(",");
-    toSerial("xVel:");
-    toSerial(aVel.x);
+    toSerial("zRaw:");
+    toSerial(q.z);
     toSerial(",");
-    toSerial("yVel:");
-    toSerial(aVel.y);
+    toSerial("wFil:");
+    toSerial(qFiltered.w);
     toSerial(",");
-    toSerial("zVel:");
-    toSerial(aVel.z);
+    toSerial("xFil:");
+    toSerial(qFiltered.x);
     toSerial(",");
-    toSerial("xPos:");
-    toSerial(pos.x);
+    toSerial("yFil:");
+    toSerial(qFiltered.y);
     toSerial(",");
-    toSerial("yPos:");
-    toSerial(pos.y);
-    toSerial(",");
-    toSerial("zPos:");
-    toSerialLn(pos.z);
+    toSerial("zFil:");
+    toSerialLn(qFiltered.z);
+
     // blink LED to indicate activity
     blinkState = !blinkState;
     digitalWrite(LED_PIN, blinkState);
