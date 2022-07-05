@@ -167,56 +167,34 @@ void loop()
     mpu.dmpGetLinearAccelInWorld(&aaWorld, &aaReal, &q);
 
     aAcc = {aaWorld.x*constante,aaWorld.y*constante,aaWorld.z*constante};
-    
-    long deltaTime = millis()-lastTime;
 
-    if((deltaTime>5000) | flag)
-    {
-      lastTime = millis();
-      flag = true;
-      
-      aVel.x += (((aAcc.x + lAcc.x)/2.0)*deltaTime/1000.0);
-      pos.x += (((aVel.x + lVel.x)/2.0)*deltaTime/1000.0);
-      aVel.y += (((aAcc.y + lAcc.y)/2.0)*deltaTime/1000.0);
-      pos.y += (((aVel.y + lVel.y)/2.0)*deltaTime/1000.0);
-      aVel.z += (((aAcc.z + lAcc.z)/2.0)*deltaTime/1000.0);
-      pos.z += (((aVel.z + lVel.z)/2.0)*deltaTime/1000.0);
 
-      lAcc = {aAcc.x,aAcc.y,aAcc.z};
-      lVel = {aVel.x,aVel.y,aVel.z};
-
-      toSerial("xAcc:");
-      toSerial(aAcc.x);
-      toSerial(",");
-      toSerial("yAcc:");
-      toSerial(aAcc.y);
-      toSerial(",");
-      toSerial("zAcc:");
-      toSerial(aAcc.z);
-      toSerial(",");
-      toSerial("xVel:");
-      toSerial(aVel.x);
-      toSerial(",");
-      toSerial("yVel:");
-      toSerial(aVel.y);
-      toSerial(",");
-      toSerial("zVel:");
-      toSerial(aVel.z);
-      toSerial(",");
-      toSerial("xPos:");
-      toSerial(pos.x);
-      toSerial(",");
-      toSerial("yPos:");
-      toSerial(pos.y);
-      toSerial(",");
-      toSerial("zPos:");
-      toSerialLn(pos.z);
-    }
-    else
-    {
-      debugln("Ignoring first 5s measurements");
-    }
-
+    toSerial("xAcc:");
+    toSerial(aAcc.x);
+    toSerial(",");
+    toSerial("yAcc:");
+    toSerial(aAcc.y);
+    toSerial(",");
+    toSerial("zAcc:");
+    toSerial(aAcc.z);
+    toSerial(",");
+    toSerial("xVel:");
+    toSerial(aVel.x);
+    toSerial(",");
+    toSerial("yVel:");
+    toSerial(aVel.y);
+    toSerial(",");
+    toSerial("zVel:");
+    toSerial(aVel.z);
+    toSerial(",");
+    toSerial("xPos:");
+    toSerial(pos.x);
+    toSerial(",");
+    toSerial("yPos:");
+    toSerial(pos.y);
+    toSerial(",");
+    toSerial("zPos:");
+    toSerialLn(pos.z);
     // blink LED to indicate activity
     blinkState = !blinkState;
     digitalWrite(LED_PIN, blinkState);
