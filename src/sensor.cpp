@@ -22,6 +22,7 @@
 // MARK: Helpers
 // Json Helper
 #include "helpers/jsonHelper.h"
+#include "helpers/wifiHelper.h"
 
 // MARK: Definitions
 
@@ -66,6 +67,8 @@ void setup()
   Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
   Serial.begin(115200);
   
+  connectToWifi();
+
   mpu.initialize(); // initialize device
 
   debugln(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));   // verify connection
