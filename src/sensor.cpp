@@ -19,6 +19,9 @@
 #include "MPU6050_6Axis_MotionApps20.h"
 #include "Wire.h"
 #include "KalmanFilter.h"
+// MARK: Helpers
+// Json Helper
+#include "helpers/jsonHelper.h"
 
 // MARK: Definitions
 
@@ -52,6 +55,9 @@ KalmanFilter qFilter[4] = {KalmanFilter(mea,est,n),KalmanFilter(mea,est,n),Kalma
 // orientation/motion vars
 Quaternion q;        // [w, x, y, z]         quaternion container
 Quaternion qFiltered;
+VectorFloat g; // Gravity vector
+float ypr[3];
+
 // MARK: Initial Setup
 
 void setup()
@@ -59,7 +65,7 @@ void setup()
   Wire.begin();
   Wire.setClock(400000); // 400kHz I2C clock. Comment this line if having compilation difficulties
   Serial.begin(115200);
-
+  
   mpu.initialize(); // initialize device
 
   debugln(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));   // verify connection
@@ -95,20 +101,18 @@ void loop()
   if (mpu.dmpGetCurrentFIFOPacket(fifoBuffer))
   { // Get the Latest packet
     mpu.dmpGetQuaternion(&q, fifoBuffer);
-    
+
     qFiltered.w = qFilter[0].updateEstimate(q.w);
     qFiltered.x = qFilter[1].updateEstimate(q.x);
     qFiltered.y = qFilter[2].updateEstimate(q.y);
     qFiltered.z = qFilter[3].updateEstimate(q.z);
 
-    toSerial("qX:"); toSerial(q.x); toSerial(",");
-    toSerial("qY:"); toSerial(q.y); toSerial(",");
-    toSerial("qZ:"); toSerial(q.z); toSerial(",");
-    toSerial("qW:"); toSerial(q.w); toSerial(",");
-    toSerial("qFX:"); toSerial(qFiltered.x); toSerial(",");
-    toSerial("qFY:"); toSerial(qFiltered.y); toSerial(",");
-    toSerial("qFZ:"); toSerial(qFiltered.z); toSerial(",");
-    toSerial("qFW:"); toSerialLn(qFiltered.w);
+    mpu.dmpGetGravity(&g, &qFiltered);
+    mpu.dmpGetYawPitchRoll(ypr, &qFiltered, &g);
+
+    json = GetJsonString(1,ypr[0],ypr[1],ypr[2]);
+
+    toSerialLn(json);
 
     // blink LED to indicate activity
     blinkState = !blinkState;
