@@ -1,98 +1,11 @@
-// MPU6050 offset-finder, based on Jeff Rowberg's MPU6050_RAW
-// 2016-10-19 by Robert R. Fenichel (bob@fenichel.net)
+#include "debuglevels/debug.h"
 
-// I2C device class (I2Cdev) demonstration Arduino sketch for MPU6050 class
-// 10/7/2011 by Jeff Rowberg <jeff@rowberg.net>
-// Updates should (hopefully) always be available at https://github.com/jrowberg/i2cdevlib
-//
-// Changelog:
-//      2019-07-11 - added PID offset generation at begninning Generates first offsets
-//                 - in @ 6 seconds and completes with 4 more sets @ 10 seconds
-//                 - then continues with origional 2016 calibration code.
-//      2016-11-25 - added delays to reduce sampling rate to ~200 Hz
-//                   added temporizing printing during long computations
-//      2016-10-25 - requires inequality (Low < Target, High > Target) during expansion
-//                   dynamic speed change when closing in
-//      2016-10-22 - cosmetic changes
-//      2016-10-19 - initial release of IMU_Zero
-//      2013-05-08 - added multiple output formats
-//                 - added seamless Fastwire support
-//      2011-10-07 - initial release of MPU6050_RAW
 
-/* ============================================
-I2Cdev device library code is placed under the MIT license
-Copyright (c) 2011 Jeff Rowberg
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
-  If an MPU6050
-      * is an ideal member of its tribe,
-      * is properly warmed up,
-      * is at rest in a neutral position,
-      * is in a location where the pull of gravity is exactly 1g, and
-      * has been loaded with the best possible offsets,
-then it will report 0 for all accelerations and displacements, except for
-Z acceleration, for which it will report 16384 (that is, 2^14).  Your device
-probably won't do quite this well, but good offsets will all get the baseline
-outputs close to these target values.
-
-  Put the MPU6050 on a flat and horizontal surface, and leave it operating for
-5-10 minutes so its temperature gets stabilized.
-
-  Run this program.  A "----- done -----" line will indicate that it has done its best.
-With the current accuracy-related constants (NFast = 1000, NSlow = 10000), it will take
-a few minutes to get there.
-
-  Along the way, it will generate a dozen or so lines of output, showing that for each
-of the 6 desired offsets, it is
-      * first, trying to find two estimates, one too low and one too high, and
-      * then, closing in until the bracket can't be made smaller.
-
-  The line just above the "done" line will look something like
-    [567,567] --> [-1,2]  [-2223,-2223] --> [0,1] [1131,1132] --> [16374,16404] [155,156] --> [-1,1]  [-25,-24] --> [0,3] [5,6] --> [0,4]
-As will have been shown in interspersed header lines, the six groups making up this
-line describe the optimum offsets for the X acceleration, Y acceleration, Z acceleration,
-X gyro, Y gyro, and Z gyro, respectively.  In the sample shown just above, the trial showed
-that +567 was the best offset for the X acceleration, -2223 was best for Y acceleration,
-and so on.
-
-  The need for the delay between readings (usDelay) was brought to my attention by Nikolaus Doppelhammer.
-===============================================
-*/
-
-// I2Cdev and MPU6050 must be installed as libraries, or else the .cpp/.h files
-// for both classes must be in the include path of your project
 #include "I2Cdev.h"
 #include "MPU6050.h"
-
-// Arduino Wire library is required if I2Cdev I2CDEV_ARDUINO_WIRE implementation
-// is used in I2Cdev.h
-#if I2CDEV_IMPLEMENTATION == I2CDEV_ARDUINO_WIRE
 #include "Wire.h"
-#endif
 
-// class default I2C address is 0x68
-// specific I2C addresses may be passed as a parameter here
-// AD0 low = 0x68 (default for InvenSense evaluation board)
-// AD0 high = 0x69
 MPU6050 accelgyro;
-// MPU6050 accelgyro(0x69); // <-- use for AD0 high
 
 const char LBRACKET = '[';
 const char RBRACKET = ']';
@@ -123,9 +36,9 @@ int N;
 void SetAveraging(int NewN)
 {
   N = NewN;
-  Serial.print("averaging ");
-  Serial.print(N);
-  Serial.println(" readings each time");
+  toSerial("averaging ");
+  toSerial(N);
+  toSerialLn(" readings each time");
 } // SetAveraging
 
 void ForceHeader()
@@ -149,15 +62,15 @@ void GetSmoothed()
     accelgyro.getMotion6(&RawValue[iAx], &RawValue[iAy], &RawValue[iAz],
                           &RawValue[iGx], &RawValue[iGy], &RawValue[iGz]);
     if ((i % 500) == 0)
-      Serial.print(PERIOD);
+      toSerial(PERIOD);
     delayMicroseconds(usDelay);
     for (int j = iAx; j <= iGz; j++)
       Sums[j] = Sums[j] + RawValue[j];
   } // get sums
     //    unsigned long usForN = micros() - Start;
-    //    Serial.print(" reading at ");
-    //    Serial.print(1000000/((usForN+N/2)/N));
-    //    Serial.println(" Hz");
+    //    toSerial(" reading at ");
+    //    toSerial(1000000/((usForN+N/2)/N));
+    //    toSerialLn(" Hz");
   for (i = iAx; i <= iGz; i++)
   {
     Smoothed[i] = (Sums[i] + N / 2) / N;
@@ -176,13 +89,13 @@ void Initialize()
   Serial.begin(115200);
 
   // initialize device
-  Serial.println("Initializing I2C devices...");
+  toSerialLn("Initializing I2C devices...");
   accelgyro.initialize();
 
   // verify connection
-  Serial.println("Testing device connections...");
-  Serial.println(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
-  Serial.println("PID tuning Each Dot = 100 readings");
+  toSerialLn("Testing device connections...");
+  toSerialLn(accelgyro.testConnection() ? "MPU6050 connection successful" : "MPU6050 connection failed");
+  toSerialLn("PID tuning Each Dot = 100 readings");
   /*A tidbit on how PID (PI actually) tuning works.
     When we change the offset in the MPU6050 we can get instant results. This allows us to use Proportional and
     integral of the PID to discover the ideal offsets. Integral is the key to discovering these offsets, Integral
@@ -196,29 +109,29 @@ void Initialize()
   */
   accelgyro.CalibrateAccel(6);
   accelgyro.CalibrateGyro(6);
-  Serial.println("\nat 600 Readings");
+  toSerialLn("\nat 600 Readings");
   accelgyro.PrintActiveOffsets();
-  Serial.println();
+  toSerialLn();
   accelgyro.CalibrateAccel(1);
   accelgyro.CalibrateGyro(1);
-  Serial.println("700 Total Readings");
+  toSerialLn("700 Total Readings");
   accelgyro.PrintActiveOffsets();
-  Serial.println();
+  toSerialLn();
   accelgyro.CalibrateAccel(1);
   accelgyro.CalibrateGyro(1);
-  Serial.println("800 Total Readings");
+  toSerialLn("800 Total Readings");
   accelgyro.PrintActiveOffsets();
-  Serial.println();
+  toSerialLn();
   accelgyro.CalibrateAccel(1);
   accelgyro.CalibrateGyro(1);
-  Serial.println("900 Total Readings");
+  toSerialLn("900 Total Readings");
   accelgyro.PrintActiveOffsets();
-  Serial.println();
+  toSerialLn();
   accelgyro.CalibrateAccel(1);
   accelgyro.CalibrateGyro(1);
-  Serial.println("1000 Total Readings");
+  toSerialLn("1000 Total Readings");
   accelgyro.PrintActiveOffsets();
-  Serial.println("\n\n Any of the above offsets will work nice \n\n Lets proof the PID tuning using another method:");
+  toSerialLn("\n\n Any of the above offsets will work nice \n\n Lets proof the PID tuning using another method:");
 } // Initialize
 
 void SetOffsets(int TheOffsets[6])
@@ -235,27 +148,27 @@ void ShowProgress()
 {
   if (LinesOut >= LinesBetweenHeaders)
   { // show header
-    Serial.println("\tXAccel\t\t\tYAccel\t\t\t\tZAccel\t\t\tXGyro\t\t\tYGyro\t\t\tZGyro");
+    toSerialLn("\tXAccel\t\t\tYAccel\t\t\t\tZAccel\t\t\tXGyro\t\t\tYGyro\t\t\tZGyro");
     LinesOut = 0;
   } // show header
-  Serial.print(BLANK);
+  toSerial(BLANK);
   for (int i = iAx; i <= iGz; i++)
   {
-    Serial.print(LBRACKET);
-    Serial.print(LowOffset[i]),
-        Serial.print(COMMA);
-    Serial.print(HighOffset[i]);
-    Serial.print("] --> [");
-    Serial.print(LowValue[i]);
-    Serial.print(COMMA);
-    Serial.print(HighValue[i]);
+    toSerial(LBRACKET);
+    toSerial(LowOffset[i]),
+        toSerial(COMMA);
+    toSerial(HighOffset[i]);
+    toSerial("] --> [");
+    toSerial(LowValue[i]);
+    toSerial(COMMA);
+    toSerial(HighValue[i]);
     if (i == iGz)
     {
-      Serial.println(RBRACKET);
+      toSerialLn(RBRACKET);
     }
     else
     {
-      Serial.print("]\t");
+      toSerial("]\t");
     }
   }
   LinesOut++;
@@ -267,7 +180,7 @@ void PullBracketsIn()
   boolean StillWorking;
   int NewOffset[6];
 
-  Serial.println("\nclosing in:");
+  toSerialLn("\nclosing in:");
   AllBracketsNarrow = false;
   ForceHeader();
   StillWorking = true;
@@ -324,7 +237,7 @@ void PullBracketsOut()
   int NextLowOffset[6];
   int NextHighOffset[6];
 
-  Serial.println("expanding:");
+  toSerialLn("expanding:");
   ForceHeader();
 
   while (!Done)
@@ -385,7 +298,7 @@ void setup()
   PullBracketsOut();
   PullBracketsIn();
 
-  Serial.println("-------------- done --------------");
+  toSerialLn("-------------- done --------------");
 } // setup
 
 void loop()

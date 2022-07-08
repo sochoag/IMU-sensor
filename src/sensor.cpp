@@ -1,16 +1,5 @@
-// MARK: Preprocesor directives
-
-#if DEBUG_LEVEL == 1
-  #define debug(x) Serial.print(x)
-  #define debugln(x) Serial.println(x)
-  #define toSerial(x) Serial.print(x)
-  #define toSerialLn(x) Serial.println(x)
-#elif DEBUG_LEVEL == 0
-  #define toSerial(x) Serial.print(x)
-  #define toSerialLn(x) Serial.println(x)
-  #define debug(x)
-  #define debugln(x)
-#endif
+// MARK: Include debug levels
+#include "debuglevels/debug.h"
 
 // MARK: Library includes
 
@@ -23,6 +12,7 @@
 // Json Helper
 #include "helpers/jsonHelper.h"
 #include "helpers/wifiHelper.h"
+#include "helpers/udpHelper.h"
 
 // MARK: Definitions
 
@@ -68,10 +58,11 @@ void setup()
   Serial.begin(115200);
   
   connectToWifi();
+  UDPConnect();
 
   mpu.initialize(); // initialize device
 
-  debugln(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));   // verify connection
+  printInfoLn(mpu.testConnection() ? F("MPU6050 connection successful") : F("MPU6050 connection failed"));   // verify connection
 
   mpu.dmpInitialize();   // load and configure the DMP
 
@@ -115,7 +106,8 @@ void loop()
 
     json = GetJsonString(1,ypr[0],ypr[1],ypr[2]);
 
-    toSerialLn(json);
+    printDebug(json);
+    UDPSendData(json);    
 
     // blink LED to indicate activity
     blinkState = !blinkState;
